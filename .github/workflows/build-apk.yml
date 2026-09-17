@@ -12,9 +12,6 @@ jobs:
       - name: Checkout project
         uses: actions/checkout@v4
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Create debug signing key
         run: |
           keytool -genkeypair -v -keystore /tmp/deadzone-debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=DeadZone,C=BN"

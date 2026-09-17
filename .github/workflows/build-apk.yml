@@ -16,6 +16,8 @@ jobs:
       - name: Prepare Godot export templates
         run: |
           mkdir -p ~/.local/share/godot/export_templates
+          mkdir -p ~/.config
+          mv /root/.config/godot ~/.config/godot
           mv /root/.local/share/godot/export_templates/4.3.stable ~/.local/share/godot/export_templates/4.3.stable
       - name: Build debug APK
         run: |

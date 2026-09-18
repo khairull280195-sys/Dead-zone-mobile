@@ -7,7 +7,7 @@ android {
         applicationId 'com.independentstudio.deadzone'
         minSdk 26
         targetSdk 35
-        versionCode 5
-        versionName '0.8-Human-Zombies-Weapons-Radar-Sound'
+        versionCode 6
+        versionName '0.9-Cinematic-Intro'
     }
 }

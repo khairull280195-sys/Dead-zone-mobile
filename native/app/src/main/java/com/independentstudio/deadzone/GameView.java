@@ -64,7 +64,7 @@ public final class GameView extends GLSurfaceView {
         private final ArrayList<Zombie> zombies=new ArrayList<>();
         private final float[] projection=new float[16],view=new float[16],vp=new float[16],model=new float[16],mvp=new float[16];
         private FloatBuffer cube,round;private int roundCount,program,aPosition,uMvp,uModel,uColor,surfaceW,surfaceH;private long lastTime;
-        private float playerX,playerZ=8,yaw,pitch,health=100,fireClock,spawnClock,muzzleTime,growlClock=2;
+        private float playerX,playerZ=8,yaw,pitch,health=100,fireClock,spawnClock,muzzleTime,growlClock=2,sceneTime;
         volatile float moveForward,moveSide,lookDx,lookDy;volatile boolean firing,dead,requestReset;
         volatile int weapon;private int kills,wave=1,remaining=7;private final SoundFx sounds=new SoundFx();
         private static final float[] CUBE={
@@ -97,6 +97,9 @@ public final class GameView extends GLSurfaceView {
             for(int i=0;i<6;i++){float bx=-15+(i%3)*2.0f,bz=-16+(i/3)*2.2f;drawCube(bx,.48f,bz,.72f,.48f,.72f,.32f,.20f,.10f,1);drawCube(bx,.99f,bz,.68f,.035f,.68f,.08f,.055f,.035f,1);}
             for(int i=0;i<5;i++){float bz=-12+i*3;drawCube(15,.55f,bz,.38f,.55f,.38f,.20f,.13f,.08f,1);drawCube(15,.60f,bz,.40f,.055f,.40f,.32f,.12f,.04f,1);}
             for(Zombie z:zombies)drawZombie(z);
+            // Moonlight and moving rain add depth without bitmap assets.
+            drawRound(playerX+12,13,playerZ-31,2.5f,2.5f,1.1f,.68f,.72f,.70f);
+            for(int i=0;i<42;i++){float rainX=playerX+((i*7.37f+sceneTime*2.1f)%30)-15,rainZ=playerZ+((i*11.13f+sceneTime*.9f)%34)-17,rainY=(i*3.17f-sceneTime*12)%8;if(rainY<0)rainY+=8;drawCube(rainX,rainY,rainZ,.012f,.23f,.012f,.20f,.32f,.42f,1);}
             float rightX=(float)Math.cos(rad),rightZ=(float)Math.sin(rad),gunLen=weapon==0?.30f:weapon==1?.54f:.46f,gunWide=weapon==2?.16f:.10f;
             drawCube(playerX+fx*.78f+rightX*.27f,1.25f+fy*.55f,playerZ+fz*.78f+rightZ*.27f,gunWide,.10f,gunLen,.10f,.11f,.13f,1);drawCube(playerX+fx*(.92f+gunLen*.30f)+rightX*.27f,1.25f+fy*.70f,playerZ+fz*(.92f+gunLen*.30f)+rightZ*.27f,.055f,.055f,gunLen*.55f,.035f,.038f,.042f,1);if(muzzleTime>0)drawCube(playerX+fx*(1.08f+gunLen)+rightX*.27f,1.25f+fy*.82f,playerZ+fz*(1.08f+gunLen)+rightZ*.27f,.12f,.12f,.12f,1,.55f,.08f,1);
             float crossX=playerX+fx*1.4f,crossY=1.65f+fy*1.4f,crossZ=playerZ+fz*1.4f;
@@ -105,7 +108,7 @@ public final class GameView extends GLSurfaceView {
             GLES20.glDisableVertexAttribArray(aPosition);
         }
         private void update(float dt){
-            float dx=lookDx,dy=lookDy;lookDx=lookDy=0;yaw+=dx;pitch=clamp(pitch-dy,-55,55);if(dead)return;
+            sceneTime+=dt;float dx=lookDx,dy=lookDy;lookDx=lookDy=0;yaw+=dx;pitch=clamp(pitch-dy,-55,55);if(dead)return;
             float r=(float)Math.toRadians(yaw),forwardX=(float)Math.sin(r),forwardZ=-(float)Math.cos(r),sideX=(float)Math.cos(r),sideZ=(float)Math.sin(r);
             playerX+=(forwardX*moveForward+sideX*moveSide)*4.1f*dt;playerZ+=(forwardZ*moveForward+sideZ*moveSide)*4.1f*dt;playerX=clamp(playerX,-17.8f,17.8f);playerZ=clamp(playerZ,-20.8f,20.8f);
             fireClock-=dt;muzzleTime=Math.max(0,muzzleTime-dt);if(firing&&fireClock<=0){shoot();fireClock=weapon==0?.28f:weapon==1?.10f:.72f;muzzleTime=.055f;sounds.gun(weapon);}growlClock-=dt;if(growlClock<=0&&!zombies.isEmpty()){sounds.growl();growlClock=2.5f+rng.nextFloat()*4;}spawnClock-=dt;if(remaining>0&&spawnClock<=0){spawn();remaining--;spawnClock=.75f;}else if(remaining==0&&zombies.isEmpty()){wave++;remaining=5+wave*2;spawnClock=2;}

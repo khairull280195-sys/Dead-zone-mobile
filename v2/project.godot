@@ -18,4 +18,3 @@ environment/defaults/default_clear_color=Color(0.008,0.012,0.018,1)
 
 [input]
 fire={"deadzone":0.5,"events":[Object(InputEventMouseButton,"button_index":1)]}
-

@@ -27,7 +27,9 @@ jobs:
           cp -a "$TEMPLATE_DIR"/. /github/home/.local/share/godot/export_templates/4.3.stable/
           mkdir -p /github/home/.android /github/home/.config/godot
           keytool -genkeypair -v -keystore /github/home/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname 'CN=Android Debug,O=Android,C=US'
-          printf '[gd_resource format=3]\n\n[resource]\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\nexport/android/debug_keystore = "/github/home/.android/debug.keystore"\n' "$ANDROID_HOME" "$JAVA_HOME" > /github/home/.config/godot/editor_settings-4.tres
+          JAVA_PATH=$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")
+          SDK_PATH=${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/opt/android-sdk}}
+          printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\nexport/android/debug_keystore = "/github/home/.android/debug.keystore"\n' "$SDK_PATH" "$JAVA_PATH" > /github/home/.config/godot/editor_settings-4.tres
       - name: Import and export Android APK
         working-directory: v2
         run: |

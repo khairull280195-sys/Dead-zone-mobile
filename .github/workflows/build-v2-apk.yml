@@ -26,10 +26,11 @@ jobs:
       - name: Import and export Android APK
         working-directory: v2
         run: |
+          set -o pipefail
           mkdir -p build
-          godot --headless --editor --quit-after 30
-          godot --headless --export-debug Android build/DeadZoneMobile-2.0.apk
+          { godot --headless --editor --quit-after 30 && godot --headless --export-debug Android build/DeadZoneMobile-2.0.apk; } 2>&1 | tee build/export.log
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: DeadZoneMobile-2.0-APK
-          path: v2/build/DeadZoneMobile-2.0.apk
+          path: v2/build/

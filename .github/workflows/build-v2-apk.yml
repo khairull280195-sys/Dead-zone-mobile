@@ -12,7 +12,7 @@ jobs:
   export-android:
     runs-on: ubuntu-latest
     container:
-      image: barichello/godot-ci:4.3
+      image: barichello/godot-ci:4.2.2
     steps:
       - uses: actions/checkout@v4
       - name: Download licensed animated human model
@@ -21,10 +21,10 @@ jobs:
           wget -q --show-progress https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/CesiumMan/glTF-Binary/CesiumMan.glb -O v2/assets/CesiumMan.glb
       - name: Configure export templates
         run: |
-          TEMPLATE_APK=$(find /root /opt /usr -path '*4.3.stable/android_debug.apk' -print -quit)
+          TEMPLATE_APK=$(find /root /opt /usr -path '*4.2.2.stable/android_debug.apk' -print -quit)
           TEMPLATE_DIR=$(dirname "$TEMPLATE_APK")
-          mkdir -p /github/home/.local/share/godot/export_templates/4.3.stable
-          cp -a "$TEMPLATE_DIR"/. /github/home/.local/share/godot/export_templates/4.3.stable/
+          mkdir -p /github/home/.local/share/godot/export_templates/4.2.2.stable
+          cp -a "$TEMPLATE_DIR"/. /github/home/.local/share/godot/export_templates/4.2.2.stable/
           mkdir -p /github/home/.android /github/home/.config/godot
           keytool -genkeypair -v -keystore /github/home/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname 'CN=Android Debug,O=Android,C=US'
           JAVA_PATH=$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")
@@ -34,18 +34,7 @@ jobs:
         working-directory: v2
         run: |
           mkdir -p build
-          {
-            echo "HOME=$HOME"
-            echo "ANDROID_HOME=${ANDROID_HOME:-unset}"
-            echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-unset}"
-            command -v java
-            java -version
-            command -v godot
-            godot --version
-            ls -la /github/home/.local/share/godot/export_templates/4.3.stable
-            keytool -list -keystore /github/home/.android/debug.keystore -storepass android
-          } > build/export.log 2>&1
-          godot --headless --verbose --editor --quit-after 30 >> build/export.log 2>&1 || true
+          godot --headless --editor --quit-after 30 > build/export.log 2>&1 || true
           godot --headless --verbose --export-debug Android build/DeadZoneMobile-2.0.apk >> build/export.log 2>&1 || true
       - uses: actions/upload-artifact@v4
         if: always()

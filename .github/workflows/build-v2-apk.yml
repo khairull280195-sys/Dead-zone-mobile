@@ -1,0 +1,36 @@
+name: Build Dead Zone Mobile 2.0
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'v2/**'
+      - '.github/workflows/build-v2-apk.yml'
+  workflow_dispatch:
+
+jobs:
+  export-android:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download licensed animated human model
+        run: |
+          mkdir -p v2/assets
+          curl -fL https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/CesiumMan/glTF-Binary/CesiumMan.glb -o v2/assets/CesiumMan.glb
+      - name: Configure export templates
+        run: |
+          mkdir -p /root/.local/share/godot/export_templates
+          if [ -d /root/.local/share/godot/export_templates/4.3.stable ]; then true; elif [ -d /root/.local/share/godot/export_templates/4.3.stable.mono ]; then mv /root/.local/share/godot/export_templates/4.3.stable.mono /root/.local/share/godot/export_templates/4.3.stable; fi
+      - name: Import and export Android APK
+        working-directory: v2
+        run: |
+          mkdir -p build
+          godot --headless --editor --quit-after 30
+          godot --headless --export-debug Android build/DeadZoneMobile-2.0.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DeadZoneMobile-2.0-APK
+          path: v2/build/DeadZoneMobile-2.0.apk
+

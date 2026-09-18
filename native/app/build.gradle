@@ -7,7 +7,7 @@ android {
         applicationId 'com.independentstudio.deadzone'
         minSdk 26
         targetSdk 35
-        versionCode 7
-        versionName '1.0-Brute-Boss'
+        versionCode 8
+        versionName '1.1-Hospital-Corridor'
     }
 }

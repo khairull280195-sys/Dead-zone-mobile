@@ -48,7 +48,7 @@ public final class GameView extends GLSurfaceView {
     }
     private static float clamp(float v,float lo,float hi){return Math.max(lo,Math.min(hi,v));}
 
-    static final class Zombie{float x,z,hp=100,attack;}
+    static final class Zombie{float x,z,hp=100,attack,phase,hitTime,death=-1,variant;}
     static final class World implements GLSurfaceView.Renderer{
         private final Random rng=new Random();
         private final ArrayList<Zombie> zombies=new ArrayList<>();
@@ -85,7 +85,7 @@ public final class GameView extends GLSurfaceView {
             for(int i=-2;i<=2;i++){float lz=i*8;drawCube(-6.3f,1.7f,lz,.08f,1.7f,.08f,.10f,.11f,.12f,1);drawCube(-6.3f,3.35f,lz,.38f,.10f,.22f,.95f,.70f,.25f,1);drawCube(6.3f,1.7f,lz,.08f,1.7f,.08f,.10f,.11f,.12f,1);drawCube(6.3f,3.35f,lz,.38f,.10f,.22f,.95f,.70f,.25f,1);}
             for(int i=0;i<6;i++){float bx=-15+(i%3)*2.0f,bz=-16+(i/3)*2.2f;drawCube(bx,.48f,bz,.72f,.48f,.72f,.32f,.20f,.10f,1);drawCube(bx,.99f,bz,.68f,.035f,.68f,.08f,.055f,.035f,1);}
             for(int i=0;i<5;i++){float bz=-12+i*3;drawCube(15,.55f,bz,.38f,.55f,.38f,.20f,.13f,.08f,1);drawCube(15,.60f,bz,.40f,.055f,.40f,.32f,.12f,.04f,1);}
-            for(Zombie z:zombies){float hurt=Math.max(0,z.hp/100f),skin=.22f+.22f*hurt;drawCube(z.x,.23f,z.z,.58f,.018f,.46f,.20f,.015f,.012f,1);drawCube(z.x-.20f,.48f,z.z,.17f,.48f,.18f,.10f,.11f,.12f,1);drawCube(z.x+.20f,.48f,z.z,.17f,.48f,.18f,.10f,.11f,.12f,1);drawCube(z.x,1.32f,z.z,.43f,.65f,.28f,.16f,.20f,.17f,1);drawCube(z.x,2.16f,z.z,.32f,.34f,.30f,skin,.30f*hurt,.16f,1);drawCube(z.x-.45f,1.30f,z.z-.08f,.11f,.66f,.11f,skin,.27f*hurt,.14f,1);drawCube(z.x+.45f,1.30f,z.z-.08f,.11f,.66f,.11f,skin,.27f*hurt,.14f,1);drawCube(z.x-.11f,2.22f,z.z-.31f,.045f,.040f,.018f,.95f,.06f,.025f,1);drawCube(z.x+.11f,2.22f,z.z-.31f,.045f,.040f,.018f,.95f,.06f,.025f,1);}
+            for(Zombie z:zombies)drawZombie(z);
             float rightX=(float)Math.cos(rad),rightZ=(float)Math.sin(rad);drawCube(playerX+fx*.78f+rightX*.27f,1.25f+fy*.55f,playerZ+fz*.78f+rightZ*.27f,.11f,.10f,.42f,.10f,.11f,.13f,1);drawCube(playerX+fx*1.02f+rightX*.27f,1.25f+fy*.70f,playerZ+fz*1.02f+rightZ*.27f,.055f,.055f,.24f,.035f,.038f,.042f,1);if(muzzleTime>0)drawCube(playerX+fx*1.32f+rightX*.27f,1.25f+fy*.82f,playerZ+fz*1.32f+rightZ*.27f,.12f,.12f,.12f,1,.55f,.08f,1);
             float crossX=playerX+fx*1.4f,crossY=1.65f+fy*1.4f,crossZ=playerZ+fz*1.4f;
             drawCube(crossX,crossY,crossZ,.026f,.006f,.006f,.95f,.95f,.95f,1);drawCube(crossX,crossY,crossZ,.006f,.026f,.006f,.95f,.95f,.95f,1);
@@ -96,12 +96,33 @@ public final class GameView extends GLSurfaceView {
             float r=(float)Math.toRadians(yaw),forwardX=(float)Math.sin(r),forwardZ=-(float)Math.cos(r),sideX=(float)Math.cos(r),sideZ=(float)Math.sin(r);
             playerX+=(forwardX*moveForward+sideX*moveSide)*4.1f*dt;playerZ+=(forwardZ*moveForward+sideZ*moveSide)*4.1f*dt;playerX=clamp(playerX,-17.8f,17.8f);playerZ=clamp(playerZ,-20.8f,20.8f);
             fireClock-=dt;muzzleTime=Math.max(0,muzzleTime-dt);if(firing&&fireClock<=0){shoot();fireClock=.18f;muzzleTime=.055f;}spawnClock-=dt;if(remaining>0&&spawnClock<=0){spawn();remaining--;spawnClock=.75f;}else if(remaining==0&&zombies.isEmpty()){wave++;remaining=5+wave*2;spawnClock=2;}
-            for(Zombie z:zombies){float zx=playerX-z.x,zz=playerZ-z.z,d=(float)Math.hypot(zx,zz);if(d>1.15f){z.x+=zx/d*(1.25f+wave*.05f)*dt;z.z+=zz/d*(1.25f+wave*.05f)*dt;}else{z.attack-=dt;if(z.attack<=0){health-=9;z.attack=.72f;if(health<=0)dead=true;}}}
+            for(int i=zombies.size()-1;i>=0;i--){Zombie z=zombies.get(i);z.hitTime=Math.max(0,z.hitTime-dt);if(z.death>=0){z.death+=dt;if(z.death>1.65f)zombies.remove(i);continue;}float zx=playerX-z.x,zz=playerZ-z.z,d=(float)Math.hypot(zx,zz);z.phase+=dt*(5.4f+wave*.12f);if(d>1.15f){z.x+=zx/d*(1.25f+wave*.05f)*dt;z.z+=zz/d*(1.25f+wave*.05f)*dt;}else{z.attack-=dt;if(z.attack<=0){health-=9;z.attack=.72f;if(health<=0)dead=true;}}}
         }
-        private void shoot(){float r=(float)Math.toRadians(yaw),fx=(float)Math.sin(r),fz=-(float)Math.cos(r);Zombie best=null;float bestScore=999;for(Zombie z:zombies){float dx=z.x-playerX,dz=z.z-playerZ,d=(float)Math.hypot(dx,dz),dot=(dx*fx+dz*fz)/Math.max(.01f,d),score=(1-dot)*d;if(dot>.965f&&d<24&&score<bestScore){best=z;bestScore=score;}}if(best!=null){best.hp-=34;if(best.hp<=0){zombies.remove(best);kills++;}}}
-        private void spawn(){Zombie z=new Zombie();float a=rng.nextFloat()*6.283f;z.x=clamp(playerX+(float)Math.sin(a)*15,-17,17);z.z=clamp(playerZ+(float)Math.cos(a)*15,-20,20);zombies.add(z);}
+        private void shoot(){float r=(float)Math.toRadians(yaw),fx=(float)Math.sin(r),fz=-(float)Math.cos(r);Zombie best=null;float bestScore=999;for(Zombie z:zombies){if(z.death>=0)continue;float dx=z.x-playerX,dz=z.z-playerZ,d=(float)Math.hypot(dx,dz),dot=(dx*fx+dz*fz)/Math.max(.01f,d),score=(1-dot)*d;if(dot>.965f&&d<24&&score<bestScore){best=z;bestScore=score;}}if(best!=null){best.hp-=34;best.hitTime=.14f;if(best.hp<=0){best.death=0;kills++;}}}
+        private void spawn(){Zombie z=new Zombie();float a=rng.nextFloat()*6.283f;z.x=clamp(playerX+(float)Math.sin(a)*15,-17,17);z.z=clamp(playerZ+(float)Math.cos(a)*15,-20,20);z.phase=rng.nextFloat()*6.28f;z.variant=rng.nextInt(3);zombies.add(z);}
         private void reset(){playerX=0;playerZ=8;yaw=0;pitch=0;health=100;kills=0;wave=1;remaining=7;spawnClock=.2f;dead=false;requestReset=false;zombies.clear();lastTime=System.nanoTime();}
         private void drawCube(float x,float y,float z,float sx,float sy,float sz,float red,float green,float blue,float alpha){Matrix.setIdentityM(model,0);Matrix.translateM(model,0,x,y,z);Matrix.scaleM(model,0,sx,sy,sz);Matrix.multiplyMM(mvp,0,vp,0,model,0);GLES20.glUniformMatrix4fv(uMvp,1,false,mvp,0);GLES20.glUniformMatrix4fv(uModel,1,false,model,0);GLES20.glUniform4f(uColor,red,green,blue,alpha);GLES20.glDrawArrays(GLES20.GL_TRIANGLES,0,36);}
+        private void drawPart(float x,float y,float z,float sx,float sy,float sz,float rx,float ry,float rz,float red,float green,float blue){Matrix.setIdentityM(model,0);Matrix.translateM(model,0,x,y,z);Matrix.rotateM(model,0,ry,0,1,0);Matrix.rotateM(model,0,rx,1,0,0);Matrix.rotateM(model,0,rz,0,0,1);Matrix.scaleM(model,0,sx,sy,sz);Matrix.multiplyMM(mvp,0,vp,0,model,0);GLES20.glUniformMatrix4fv(uMvp,1,false,mvp,0);GLES20.glUniformMatrix4fv(uModel,1,false,model,0);GLES20.glUniform4f(uColor,red,green,blue,1);GLES20.glDrawArrays(GLES20.GL_TRIANGLES,0,36);}
+        private void drawZombie(Zombie z){
+            float dx=playerX-z.x,dz=playerZ-z.z,d=(float)Math.hypot(dx,dz),face=(float)Math.toDegrees(Math.atan2(-dx,-dz));
+            float walk=(float)Math.sin(z.phase),bob=Math.abs((float)Math.sin(z.phase))*0.055f,leg=walk*30,arm=-walk*34-12;
+            boolean attacking=d<1.35f&&z.death<0;if(attacking){arm=-78+walk*8;bob=.02f;}
+            float fall=z.death<0?0:Math.min(92,z.death*105),sink=z.death<0?0:Math.min(.78f,z.death*.72f);
+            float hurt=Math.max(0,z.hp/100f),flash=z.hitTime>0?1:0,skinR=flash>0?.92f:.24f+.18f*hurt,skinG=flash>0?.12f:.15f+.15f*hurt,skinB=flash>0?.10f:.09f;
+            float shirtR=z.variant==0?.12f:z.variant==1?.25f:.10f,shirtG=z.variant==0?.22f:z.variant==1?.13f:.18f,shirtB=z.variant==0?.18f:z.variant==1?.10f:.27f;
+            // Soft contact shadow and blood beneath wounded/dead infected.
+            drawCube(z.x,.018f,z.z,.50f,.012f,.34f,.018f,.022f,.022f,1);if(z.hp<70)drawCube(z.x+.18f,.024f,z.z+.10f,.22f,.010f,.16f,.20f,.012f,.010f,1);
+            float base=.02f-sink,bodyTilt=fall;
+            drawPart(z.x-.18f,base+.52f+bob,z.z,.15f,.50f,.17f,leg,face,bodyTilt,.075f,.080f,.085f);
+            drawPart(z.x+.18f,base+.52f+bob,z.z,.15f,.50f,.17f,-leg,face,bodyTilt,.075f,.080f,.085f);
+            drawPart(z.x,base+1.36f+bob,z.z,.42f,.62f,.27f,0,face,bodyTilt,shirtR,shirtG,shirtB);
+            drawPart(z.x-.43f,base+1.38f+bob,z.z-.03f,.105f,.62f,.105f,arm,face,bodyTilt,skinR,skinG,skinB);
+            drawPart(z.x+.43f,base+1.38f+bob,z.z-.03f,.105f,.62f,.105f,-arm,face,bodyTilt,skinR,skinG,skinB);
+            drawPart(z.x,base+2.18f+bob,z.z,.31f,.34f,.29f,walk*3,face,bodyTilt,skinR,skinG,skinB);
+            float fr=(float)Math.toRadians(face),eyeX=(float)Math.sin(fr),eyeZ=(float)Math.cos(fr);
+            drawCube(z.x-eyeX*.30f-.10f,base+2.23f+bob,z.z-eyeZ*.30f,.040f,.038f,.020f,.95f,.018f,.008f,1);drawCube(z.x-eyeX*.30f+.10f,base+2.23f+bob,z.z-eyeZ*.30f,.040f,.038f,.020f,.95f,.018f,.008f,1);
+            drawPart(z.x,base+2.02f+bob,z.z-.30f,.12f,.035f,.025f,0,face,bodyTilt,.12f,.018f,.014f);
+        }
         private static int link(String vs,String fs){int v=shader(GLES20.GL_VERTEX_SHADER,vs),f=shader(GLES20.GL_FRAGMENT_SHADER,fs),p=GLES20.glCreateProgram();GLES20.glAttachShader(p,v);GLES20.glAttachShader(p,f);GLES20.glLinkProgram(p);return p;}
         private static int shader(int type,String source){int s=GLES20.glCreateShader(type);GLES20.glShaderSource(s,source);GLES20.glCompileShader(s);return s;}
         private static float clamp(float v,float lo,float hi){return Math.max(lo,Math.min(hi,v));}
